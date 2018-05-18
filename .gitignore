@@ -1,4 +1,5 @@
 # git rm --cached `git ls-files -i --exclude-from=.gitignore`
+.idea
 .dart_tool/
 .packages
 .pub/
