@@ -1,0 +1,8 @@
+# git rm --cached `git ls-files -i --exclude-from=.gitignore`
+.dart_tool/
+.packages
+.pub/
+build/
+pubspec.lock
+# Directory created by dartdoc
+doc/api/
