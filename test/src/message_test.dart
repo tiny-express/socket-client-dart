@@ -33,4 +33,12 @@ void main() {
     expect(unserializedMessage.event, equals(message.event));
     expect(unserializedMessage.message, equals(message.message));
   });
+
+  test('Message:generateRequestId', () async {
+    var message1 = new Message(
+        "onUserSignIn", {"username": "loinp", "password":"123456"});
+    var message2 = new Message(
+        "onUserSignIn", {"username": "loinp123", "password":"123456"});
+    expect(message1.generateRequestId(), isNot(message2.generateRequestId()));
+  });
 }
