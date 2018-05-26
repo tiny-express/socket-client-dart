@@ -27,7 +27,6 @@ class Client {
   LinkedList<SocketListener> listeners = new LinkedList();
   dynamic eventListeners = {};
 
-  static bool isTerminated = false;
   static bool isDebug = false;
   bool isReplied = false;
   bool isRetry = false;
@@ -120,7 +119,6 @@ DataTransport(SendPort sendPort) async {
   await for (var pkg in port) {
     message = pkg[0];
     sender = pkg[1];
-    print('<<' + message);
     if (message.toString().startsWith('connected')) {
       sender.send((ws != null && ws.closeCode == null) ? '1' : '0');
       continue;
@@ -130,7 +128,7 @@ DataTransport(SendPort sendPort) async {
       if (ws.closeCode == null) {
         sender.send('1');
         ws.listen((textMessage) {
-          print('>> ' + textMessage);
+          print('>> ' + textMessage + '\n');
           sender.send(textMessage.toString());
         });
       } else {
@@ -139,6 +137,7 @@ DataTransport(SendPort sendPort) async {
       continue;
     }
     if (ws.closeCode == null) {
+      print('<<' + message + '\n');
       ws.add(message);
     }
   }

@@ -11,7 +11,6 @@ void main() {
     // Client connection is not allowed to retry
     // another connection is connected
     Client.isDebug = true;
-    Client.isTerminated = false;
     var client = new Client('ws://localhost:3000', 100);
     client.authenticate({
       "scope": "Mobile",
@@ -24,6 +23,8 @@ void main() {
     client.onConnection(() {
       client.on("UserAuthSignIn", (Message message) {
         print(message.serialize());
+        expect("UserAuthSignIn", equals(message.event));
+        expect('{"status": "OK"}', equals(message.message));
       });
       client.send("UserAuthSignIn", {});
     });
