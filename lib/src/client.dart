@@ -15,9 +15,7 @@ import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
 
 part 'listener.dart';
-
 part 'message.dart';
-
 part 'socket_listener.dart';
 
 class Client {
@@ -27,7 +25,7 @@ class Client {
   Function onConnectionCallback;
   Function onDisconnectionCallback;
   LinkedList<SocketListener> listeners = new LinkedList();
-  HashMap<String, Function> eventListeners = new HashMap();
+  dynamic eventListeners = {};
 
   static bool isTerminated = false;
   static bool isDebug = false;
@@ -44,12 +42,20 @@ class Client {
     }
   }
 
-  Future<String> onConnection(Function onConnectionCallback) async {
-    this.onConnectionCallback = onConnectionCallback;
+  Future connect() async {
     var receivePort = new ReceivePort();
     await Isolate.spawn(DataTransport, receivePort.sendPort);
     this.sendPort = await receivePort.first;
-    return await send('hello', '');
+    var ackMessage = await send(Message.ACK, {});
+    if (ackMessage != null && ackMessage.event == Message.ACK) {
+      if (this.onConnectionCallback != null) {
+        this.onConnectionCallback();
+      }
+    }
+  }
+
+  void onConnection(Function onConnectionCallback) {
+    this.onConnectionCallback = onConnectionCallback;
   }
 
   Client onDisconnection(Function onDisconnectionCallback) {
@@ -58,7 +64,7 @@ class Client {
   }
 
   Client on(String eventName, Function onMessageCallback) {
-    eventListeners.putIfAbsent(eventName, onMessageCallback);
+    eventListeners[eventName] = onMessageCallback;
     return this;
   }
 
@@ -67,26 +73,39 @@ class Client {
     return this;
   }
 
-  Future send(String eventName, dynamic data) async {
-    var message = new Message(eventName, data);
+  Future<Message> invoke(eventName, dynamic data) async {
+    var requestMessage = new Message(eventName, data);
+    var responseMessage = Message.unserialize(
+        await sendReceive(sendPort, requestMessage.serialize())
+    );
+    if (responseMessage != null && responseMessage.event.length > 0) {
+      var callback = eventListeners[responseMessage.event];
+      if (callback != null) {
+        callback(responseMessage);
+      }
+    }
+    return responseMessage;
+  }
+
+  Future<Message> send(String eventName, dynamic data) async {
     final isConnected = await sendReceive(sendPort, 'connected');
-    if (isConnected == '1') {
-      return await sendReceive(sendPort, message);
+    if (isConnected.toString() == '1') {
+      return await invoke(eventName, data);
     }
     final connected = await sendReceive(sendPort, this.url);
-    if (connected == '1') {
+    if (connected.toString() == '1') {
       var authMessage = new Message('RequestAccess', this.requestAccess);
       final ackMessage = Message.unserialize(
           await sendReceive(sendPort, authMessage.serialize())
       );
-      if ((ackMessage != null) && (ackMessage.event == Message.ACK)) {
-        return await sendReceive(sendPort, message);
+      if ((ackMessage != null) && (ackMessage.event == Message.AUTHENTICATED)) {
+        return await invoke(eventName, data);
       }
     }
-    return await new Future(() => '0');
+    return await new Future(() => null);
   }
 
-  Future sendReceive(SendPort port, msg) {
+  Future<String> sendReceive(SendPort port, msg) {
     ReceivePort response = new ReceivePort();
     port.send([msg, response.sendPort]);
     return response.first;
@@ -101,9 +120,9 @@ DataTransport(SendPort sendPort) async {
   await for (var pkg in port) {
     message = pkg[0];
     sender = pkg[1];
-    print('<<' + message.toString());
+    print('<<' + message);
     if (message.toString().startsWith('connected')) {
-      sender.send((ws != null && ws.closeCode == null) ? 1 : 0);
+      sender.send((ws != null && ws.closeCode == null) ? '1' : '0');
       continue;
     }
     if (message.toString().startsWith('ws://')) {
@@ -112,7 +131,7 @@ DataTransport(SendPort sendPort) async {
         sender.send('1');
         ws.listen((textMessage) {
           print('>> ' + textMessage);
-          sender.send(textMessage);
+          sender.send(textMessage.toString());
         });
       } else {
         sender.send('0');

@@ -7,9 +7,10 @@ part of client;
 
 // Message entity is a data inter-change format
 // Support for serialize and un-serialize
-class Message extends LinkedListEntry<Message> {
+class Message {
 
-  static const HELLO = "Hello";
+  static const AUTHENTICATED = "Authenticated";
+  static const Hello = "Hello";
   static const ACK = "Ack";
 
   String requestId;

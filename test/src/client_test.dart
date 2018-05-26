@@ -21,13 +21,13 @@ void main() {
       "osVersion": "1234",
       "ipAddress": "127.0.0.1"
     });
-    await client.onConnection(() {
-      print('::onConnection');
-      client.send("UserAuthSignIn", {});
-      client.on("UserAuthSignIn", (message) {
-        print(message);
+    client.onConnection(() {
+      client.on("UserAuthSignIn", (Message message) {
+        print(message.serialize());
       });
+      client.send("UserAuthSignIn", {});
     });
+    await client.connect();
   });
 
   test("Client:canTerminate", () async {
