@@ -13,206 +13,43 @@ import 'dart:io';
 import 'dart:math';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
+
 part 'listener.dart';
+
 part 'message.dart';
+
 part 'socket_listener.dart';
-
-bool SOCKET_CLIENT_TERMINATED = false;
-bool SOCKET_CLIENT_DEBUG = false;
-
-bool _SOCKET_CLIENT_REPLIED = false;
-bool _SOCKET_CLIENT_RETRY =  false;
-bool _SOCKET_CLIENT_CONNECTED = false;
-
-Message lastMessage = null;
-LinkedList<Message> messageQueue = new LinkedList();
-WebSocket ws = null;
 
 class Client {
   String url = '';
   int heartbeatTime;
-  bool debug;
-  bool isConnected = false;
-  bool isRetry = true;
-  bool isReplied = false;
   dynamic requestAccess;
   Function onConnectionCallback;
   Function onDisconnectionCallback;
   LinkedList<SocketListener> listeners = new LinkedList();
   HashMap<String, Function> eventListeners = new HashMap();
 
-  Client(this.url,
-      [this.heartbeatTime = 1000,
-        this.debug = true]) {}
+  static bool isTerminated = false;
+  static bool isDebug = false;
+  bool isReplied = false;
+  bool isRetry = false;
+  bool isConnected = false;
+  SendPort sendPort;
+  Client(this.url, [this.heartbeatTime = 1000]) {}
 
   // Enable logging for debug mode
   static void log(String message) {
-    if (SOCKET_CLIENT_DEBUG) {
+    if (isDebug) {
       print(message);
     }
   }
 
-  // Establish new connection
-  // to web socket server
-  Future connect() async {
-    log('Connect with ' + url);
-    try {
-      isConnected = false;
-      try {
-        ws = await WebSocket.connect(this.url);
-        isConnected = true;
-      } catch (e) {
-        ws = null;
-        return;
-      }
-      log('say hello at ' + this.url);
-      ws.add("hello");
-      ws.listen((textMessage) {
-        var message = Message.unserialize(textMessage);
-        log(message.event);
-        log(message.message);
-        // Acknowledge connection
-        // Require authentication
-        if (message.event == "Hello") {
-          // Connection is connected
-          // Do not allow retry anymore
-          isConnected = true;
-          isRetry = false;
-          if (requestAccess != null) {
-            log('Authenticating...');
-            emitFirst("RequestAcccess", requestAccess);
-          }
-          return;
-        }
-        // Connection is authenticated
-        if (message.event == "RequestAccess") {
-          onConnectionCallback();
-          return;
-        }
-        // Connection is authenticated
-        if (message.event == "Ack") {
-          isReplied = true;
-          return;
-        }
-        log('Find event ' + message.event);
-        // Find event and invoke corresponding  callback
-        Function callback = eventListeners[message.event];
-        if (callback != null) {
-          callback();
-        }
-      });
-      log('Done connection function');
-    } catch (e) {
-      print(e.toString());
-    }
-    log('Done connect');
-  }
-
-  // Close web socket connection
-  static void disconnect() {
-    if (ws != null) {
-      ws.close();
-    }
-  }
-
-  // Disconnect with current connection
-  // Establish new connection
-  Future reconnect() async {
-    disconnect();
-    await connect();
-    log('Done reconnect');
-  }
-
-  // Try to establish connection to server
-  // Only single connection at one time
-  // @return Future
-  Future retry() async {
-    if (isRetry) {
-      log('Retry');
-      // Not allow retry while reconnecting
-      // to prevent connection overlapping
-      isRetry = false;
-      await reconnect();
-      log('Done retry');
-    }
-  }
-
-  // Only allow to terminate if all messages
-  // are already sent and terminate signal was declared
-  static bool canTerminate() {
-    return messageQueue.isEmpty && SOCKET_CLIENT_TERMINATED;
-  }
-
-  // Watch connection and presents a retry mechanism
-  // This watcher supports testing mode with isTerminated flag
-  Future watchConnection() async {
-    log('Fork listener');
-    // Create a message broker to isolate process
-    var receivePort = new ReceivePort();
-    await Isolate.spawn(WebSocketListener, receivePort.sendPort);
-    final sendPort = await receivePort.first;
-    log('Enter loop');
-    while (true) {
-      sleep(new Duration(milliseconds: this.heartbeatTime));
-
-      // Trigger isolate sending process
-      ReceivePort response = new ReceivePort();
-      await sendPort.send(["push", response.sendPort]);
-
-      log('Test connection');
-
-      if (ws == null || !isConnected) {
-        await retry();
-        continue;
-      }
-
-      if (canTerminate()) break;
-    }
-  }
-
-  // After sending message we need to wait
-  // and verify if any response from server
-  // before sending next package to avoid package lost
-  static verifyMessagePackage() {
-    log('Verify message');
-    try {
-      // Waiting for verification
-      int tryCounter = 0;
-      while (true) {
-        log('Checking ' + tryCounter.toString());
-        if (canTerminate()) {
-          disconnect();
-          break;
-        }
-
-        tryCounter++;
-
-        if (_SOCKET_CLIENT_REPLIED) {
-          log("Message received success");
-          break;
-        }
-
-        // Counter reach number of times
-        // Support 600 times for slow connection
-        if (tryCounter > 100) {
-          log("||[client] Server does not response - timeout !");
-          // Give up
-          // Allow connection do retry
-          _SOCKET_CLIENT_RETRY = true;
-          break;
-        }
-
-        // Sleep at the end to optimize time
-        sleep(new Duration(milliseconds: 50));
-      }
-    } catch (e) {
-      log(e.toString());
-    }
-  }
-
-  Client onConnection(Function onConnectionCallback) {
+  Future<String> onConnection(Function onConnectionCallback) async {
     this.onConnectionCallback = onConnectionCallback;
-    return this;
+    var receivePort = new ReceivePort();
+    await Isolate.spawn(DataTransport, receivePort.sendPort);
+    this.sendPort = await receivePort.first;
+    return await send('hello', '');
   }
 
   Client onDisconnection(Function onDisconnectionCallback) {
@@ -230,39 +67,60 @@ class Client {
     return this;
   }
 
-  Client emitFirst(String eventName, dynamic data) {
-    Message message = new Message(eventName, data);
-    messageQueue.addFirst(message);
-    return this;
+  Future send(String eventName, dynamic data) async {
+    var message = new Message(eventName, data);
+    final isConnected = await sendReceive(sendPort, 'connected');
+    if (isConnected == '1') {
+      return await sendReceive(sendPort, message);
+    }
+    final connected = await sendReceive(sendPort, this.url);
+    if (connected == '1') {
+      var authMessage = new Message('RequestAccess', this.requestAccess);
+      final ackMessage = Message.unserialize(
+          await sendReceive(sendPort, authMessage.serialize())
+      );
+      if ((ackMessage != null) && (ackMessage.event == Message.ACK)) {
+        return await sendReceive(sendPort, message);
+      }
+    }
+    return await new Future(() => '0');
   }
 
-  Client emit(String eventName, dynamic data) {
-    Message message = new Message(eventName, data.toString());
-    messageQueue.add(message);
-    return this;
+  Future sendReceive(SendPort port, msg) {
+    ReceivePort response = new ReceivePort();
+    port.send([msg, response.sendPort]);
+    return response.first;
   }
 }
 
-WebSocketListener(SendPort sendPort) async {
-  print('WebSocketListener');
+DataTransport(SendPort sendPort) async {
   var port = new ReceivePort();
   sendPort.send(port.sendPort);
-  await for (var msg in port) {
-    print('Checking message in queue \n');
-    if (messageQueue.isEmpty) {
+  WebSocket ws = null;
+  var message, sender;
+  await for (var pkg in port) {
+    message = pkg[0];
+    sender = pkg[1];
+    print('<<' + message.toString());
+    if (message.toString().startsWith('connected')) {
+      sender.send((ws != null && ws.closeCode == null) ? 1 : 0);
       continue;
     }
-
-    // Prepare next package will be sent
-    Message sendMessage = lastMessage;
-    if (sendMessage == null) {
-      sendMessage = messageQueue.last;
+    if (message.toString().startsWith('ws://')) {
+      ws = await WebSocket.connect(message);
+      if (ws.closeCode == null) {
+        sender.send('1');
+        ws.listen((textMessage) {
+          print('>> ' + textMessage);
+          sender.send(textMessage);
+        });
+      } else {
+        sender.send('0');
+      }
+      continue;
     }
-    print('Sending ' + sendMessage.serialize());
-    // Send message and waiting for verification
-    await ws.add(sendMessage.serialize());
-    await Client.verifyMessagePackage();
-    messageQueue.remove(sendMessage);
+    if (ws.closeCode == null) {
+      ws.add(message);
+    }
   }
 }
-

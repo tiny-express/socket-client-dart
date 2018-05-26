@@ -10,9 +10,9 @@ void main() {
   test("Client:integration", () async {
     // Client connection is not allowed to retry
     // another connection is connected
-    SOCKET_CLIENT_TERMINATED = true;
-    SOCKET_CLIENT_DEBUG = true;
-    var client = new Client('ws://localhost:3000', 100, true);
+    Client.isDebug = true;
+    Client.isTerminated = false;
+    var client = new Client('ws://localhost:3000', 100);
     client.authenticate({
       "scope": "Mobile",
       "version": "v1_0",
@@ -21,14 +21,13 @@ void main() {
       "osVersion": "1234",
       "ipAddress": "127.0.0.1"
     });
-    client.onConnection(() {
+    await client.onConnection(() {
       print('::onConnection');
-      client.emit("UserAuthSignIn", {});
+      client.send("UserAuthSignIn", {});
       client.on("UserAuthSignIn", (message) {
         print(message);
       });
     });
-    await client.watchConnection();
   });
 
   test("Client:canTerminate", () async {

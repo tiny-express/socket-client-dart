@@ -8,6 +8,10 @@ part of client;
 // Message entity is a data inter-change format
 // Support for serialize and un-serialize
 class Message extends LinkedListEntry<Message> {
+
+  static const HELLO = "Hello";
+  static const ACK = "Ack";
+
   String requestId;
   String event;
   String message;
@@ -24,6 +28,9 @@ class Message extends LinkedListEntry<Message> {
   // Decode text message to message object
   // Support for retrieving data from server
   static Message unserialize(String textMessage) {
+    if (textMessage == null) {
+      return null;
+    }
     var messageComponents = textMessage.split("|");
     if (messageComponents.length != 3) {
       return null;
