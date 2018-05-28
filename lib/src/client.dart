@@ -25,29 +25,28 @@
 library client;
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:convert';
 import 'dart:math';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
+import 'socket_client.dart';
 
 part 'message.dart';
 
-class Client {
-  String url = '';
-  int heartbeatTime;
+abstract class Client {
+  String url;
   dynamic requestAccess;
   Function onConnectionCallback;
   Function onDisconnectionCallback;
   dynamic eventListeners = {};
   static bool isDebug = false;
-  bool isReplied = false;
-  bool isConnected = false;
   Message lastMessage = null;
-  WebSocket webSocket;
   StreamController<String> responseStream;
+  SocketClient socket;
 
-  Client(this.url, [this.heartbeatTime = 1000]) {}
+  Client(this.url);
+
+  SocketClient getSocket();
 
   // Enable logging for debug mode
   static void log(String message) {
@@ -56,20 +55,17 @@ class Client {
     }
   }
 
-  Future connect() async {
-    await emit(Message.REQUEST_ACCESS, this.requestAccess);
-  }
-
   Future<String> transport(String message) async {
+    print('Transport : ' + message);
     if (message.toString().startsWith('connected')) {
-      return webSocket != null && webSocket.closeCode == null ? '1' : '0';
+      return socket != null && socket.isConnected() ? '1' : '0';
     }
     if (message.toString().startsWith('ws://')) {
-      webSocket = await WebSocket.connect(message);
-      if (webSocket.closeCode == null) {
+      socket = await getSocket().connect();
+      if (socket.isConnected()) {
         // Create new stream for new connection
         responseStream = new StreamController.broadcast();
-        webSocket.listen((textMessage) {
+        await socket.listen((textMessage) {
           responseStream.add(textMessage);
         });
         return '1';
@@ -77,9 +73,9 @@ class Client {
         return '0';
       }
     }
-    if (webSocket.closeCode == null) {
+    if (socket.isConnected()) {
       print('<< [client ] ' + message);
-      webSocket.add(message);
+      socket.add(message);
       return responseStream.stream.first;
     }
     return null;
@@ -119,14 +115,17 @@ class Client {
       return 0;
     }
     await callback(message);
+    return 0;
   }
 
   Future<Message> emit(String eventName, dynamic data) async {
+    print('Emit');
     final isConnected = await transport('connected');
     var connected = '1';
     if (isConnected.toString() != '1') {
       connected = await transport(this.url);
     }
+    print('Connected ' + connected.toString());
     if (connected.toString() == '1') {
       var requestMessage = new Message(eventName, data);
       String responseText = null;

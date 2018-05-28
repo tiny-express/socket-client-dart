@@ -22,39 +22,46 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import 'package:test/test.dart';
-import 'package:socket_client_dart/socket_flutter.dart';
+library socket.web;
 
-void main() {
-  test("Client:integration", () async {
-    // Client connection is not allowed to retry
-    // another connection is connected
-    Client.isDebug = true;
-    var client = new Client('ws://localhost:3000', 100);
-    client.authenticate({
-      "scope": "Mobile",
-      "version": "v1_0",
-      "platform": "Android",
-      "device": "Sony Xperia Z",
-      "osVersion": "1234",
-      "ipAddress": "127.0.0.1"
-    });
-    client.onConnection(() async {
-      client.on("UserAuthSignIn", (Message message) async {
-        expect("UserAuthSignIn", equals(message.event));
-        expect('{"status": "OK"}', equals(message.message));
-      });
-      await client.emit("UserAuthSignIn", {});
-      await client.emit("UserAuthSignIn", {});
-    });
-    await client.connect();
-  });
+import 'dart:html';
+import 'dart:async';
+import 'package:socket_client_dart/src/client.dart' as Client;
+import 'package:socket_client_dart/src/socket_client.dart';
 
-  test("Client:canTerminate", () async {
-    // Client connection is not allowed to retry
-    // another connection is connected
-//    var client = new Client("");
-//    client.isTerminated = true;
-//    assert(client.canTerminate(), true);
-  });
+class WebSocketClient extends Client.Client implements SocketClient {
+
+  WebSocket _client;
+  WebSocketClient(String url) : super(url);
+
+  SocketClient getSocket() {
+    return this;
+  }
+
+  Future initialize() async {
+    _client = new WebSocket(this.url);
+  }
+
+  @override
+  Future connect() async {
+    await emit(Client.Message.REQUEST_ACCESS, this.requestAccess);
+  }
+
+  @override
+  bool isConnected() {
+    return _client != null && _client.readyState == WebSocket.OPEN;
+  }
+
+  @override
+  Future add(String message) async {
+    return await _client.send(message);
+  }
+
+  @override
+  Future listen( callback) async {
+    return _client.onMessage.listen((message) {
+      callback(message);
+    });
+  }
 }
+

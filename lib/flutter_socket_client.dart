@@ -22,7 +22,48 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-library socket;
+library socket.futter;
 
-export 'src/client.dart';
+import 'dart:io';
+import 'dart:async';
+import 'package:socket_client_dart/src/client.dart';
+import 'package:socket_client_dart/src/socket_client.dart';
+
+class FlutterSocketClient extends Client implements SocketClient {
+
+  WebSocket _client;
+
+  FlutterSocketClient(String url) : super(url);
+
+  @override
+  SocketClient getSocket() {
+    return this;
+  }
+
+  Future initialize() async {
+    _client = await WebSocket.connect(this.url);
+  }
+
+  @override
+  Future connect() async {
+    await emit(Message.REQUEST_ACCESS, this.requestAccess);
+  }
+
+  @override
+  bool isConnected() {
+    return _client != null && _client.readyState == WebSocket.OPEN;
+  }
+
+  @override
+  Future add(String message) async {
+      return await _client.add(message);
+  }
+
+  @override
+  Future listen(Function callback) async {
+    return await _client.listen((message) {
+        callback(message.toString());
+      });
+  }
+}
 

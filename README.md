@@ -1,6 +1,6 @@
 # Socket Client for Dart
 
-Usages:
+For Flutter:
 ```dart
 var client = new Client('ws://localhost:3000', 100);
 client.authenticate({
