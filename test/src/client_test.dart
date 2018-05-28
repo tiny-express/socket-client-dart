@@ -45,6 +45,7 @@ void main() {
         expect('{"status": "OK"}', equals(message.message));
       });
       await client.emit("UserAuthSignIn", {});
+      await client.emit("UserAuthSignIn", {});
     });
     await client.connect();
   });
