@@ -25,10 +25,8 @@
 library client;
 
 import 'dart:async';
-import 'dart:isolate';
-import 'dart:collection';
-import 'dart:convert';
 import 'dart:io';
+import 'dart:convert';
 import 'dart:math';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
@@ -42,12 +40,13 @@ class Client {
   Function onConnectionCallback;
   Function onDisconnectionCallback;
   dynamic eventListeners = {};
-
   static bool isDebug = false;
   bool isReplied = false;
-  bool isRetry = false;
   bool isConnected = false;
-  SendPort sendPort;
+  Message lastMessage = null;
+  WebSocket webSocket;
+  StreamController<String> responseStream;
+
   Client(this.url, [this.heartbeatTime = 1000]) {}
 
   // Enable logging for debug mode
@@ -58,15 +57,32 @@ class Client {
   }
 
   Future connect() async {
-    var receivePort = new ReceivePort();
-    await Isolate.spawn(DataTransport, receivePort.sendPort);
-    this.sendPort = await receivePort.first;
-    var ackMessage = await send(Message.ACK, {});
-    if (ackMessage != null && ackMessage.event == Message.ACK) {
-      if (this.onConnectionCallback != null) {
-        this.onConnectionCallback();
+    await emit(Message.REQUEST_ACCESS, this.requestAccess);
+  }
+
+  Future<String> transport(String message) async {
+    if (message.toString().startsWith('connected')) {
+      return webSocket != null && webSocket.closeCode == null ? '1' : '0';
+    }
+    if (message.toString().startsWith('ws://')) {
+      webSocket = await WebSocket.connect(message);
+      if (webSocket.closeCode == null) {
+        // Create new stream for new connection
+        responseStream = new StreamController.broadcast();
+        webSocket.listen((textMessage) {
+          responseStream.add(textMessage);
+        });
+        return '1';
+      } else {
+        return '0';
       }
     }
+    if (webSocket.closeCode == null) {
+      print('<< [client ] ' + message);
+      webSocket.add(message);
+      return responseStream.stream.first;
+    }
+    return null;
   }
 
   void onConnection(Function onConnectionCallback) {
@@ -88,73 +104,41 @@ class Client {
     return this;
   }
 
-  Future<Message> invoke(eventName, dynamic data) async {
-    var requestMessage = new Message(eventName, data);
-    var responseMessage = Message.unserialize(
-        await sendReceive(sendPort, requestMessage.serialize())
-    );
-    if (responseMessage != null && responseMessage.event.length > 0) {
-      var callback = eventListeners[responseMessage.event];
-      if (callback != null) {
-        callback(responseMessage);
+  Future<int> invoke(Message message) async {
+    if ((message == null) || message.event.length == 0) {
+      return 0;
+    }
+    if (message.event == Message.AUTHENTICATED) {
+      if (this.onConnectionCallback != null) {
+        return await this.onConnectionCallback();
       }
     }
-    return responseMessage;
+    var callback = eventListeners[message.event];
+    if (callback == null) {
+      print('Can not process event ' + message.event);
+      return 0;
+    }
+    await callback(message);
   }
 
-  Future<Message> send(String eventName, dynamic data) async {
-    final isConnected = await sendReceive(sendPort, 'connected');
-    if (isConnected.toString() == '1') {
-      return await invoke(eventName, data);
+  Future<Message> emit(String eventName, dynamic data) async {
+    final isConnected = await transport('connected');
+    var connected = '1';
+    if (isConnected.toString() != '1') {
+      connected = await transport(this.url);
     }
-    final connected = await sendReceive(sendPort, this.url);
     if (connected.toString() == '1') {
-      var authMessage = new Message('RequestAccess', this.requestAccess);
-      final ackMessage = Message.unserialize(
-          await sendReceive(sendPort, authMessage.serialize())
-      );
-      if ((ackMessage != null) && (ackMessage.event == Message.AUTHENTICATED)) {
-        return await invoke(eventName, data);
-      }
+      var requestMessage = new Message(eventName, data);
+      String responseText = null;
+      try {
+        responseText = await transport(requestMessage.serialize());
+        lastMessage = null;
+      } catch (e) {}
+      print('>> [server] ' + responseText);
+      var responseMessage = Message.unserialize(responseText);
+      await invoke(responseMessage);
+      return responseMessage;
     }
-    return await new Future(() => null);
-  }
-
-  Future<String> sendReceive(SendPort port, msg) {
-    ReceivePort response = new ReceivePort();
-    port.send([msg, response.sendPort]);
-    return response.first;
-  }
-}
-
-DataTransport(SendPort sendPort) async {
-  var port = new ReceivePort();
-  sendPort.send(port.sendPort);
-  WebSocket ws = null;
-  var message, sender;
-  await for (var pkg in port) {
-    message = pkg[0];
-    sender = pkg[1];
-    if (message.toString().startsWith('connected')) {
-      sender.send((ws != null && ws.closeCode == null) ? '1' : '0');
-      continue;
-    }
-    if (message.toString().startsWith('ws://')) {
-      ws = await WebSocket.connect(message);
-      if (ws.closeCode == null) {
-        sender.send('1');
-        ws.listen((textMessage) {
-          print('>> ' + textMessage + '\n');
-          sender.send(textMessage.toString());
-        });
-      } else {
-        sender.send('0');
-      }
-      continue;
-    }
-    if (ws.closeCode == null) {
-      print('<<' + message + '\n');
-      ws.add(message);
-    }
+    return null;
   }
 }

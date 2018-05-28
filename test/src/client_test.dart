@@ -39,13 +39,13 @@ void main() {
       "osVersion": "1234",
       "ipAddress": "127.0.0.1"
     });
-    client.onConnection(() {
-      client.on("UserAuthSignIn", (Message message) {
-        print(message.serialize());
+    client.onConnection(() async {
+      client.on("UserAuthSignIn", (Message message) async {
+        print('::UserAuthSignIn');
         expect("UserAuthSignIn", equals(message.event));
         expect('{"status": "OK"}', equals(message.message));
       });
-      client.send("UserAuthSignIn", {});
+      await client.emit("UserAuthSignIn", {});
     });
     await client.connect();
   });
