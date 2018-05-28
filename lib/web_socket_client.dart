@@ -39,7 +39,15 @@ class WebSocketClient extends Client.Client implements SocketClient {
   }
 
   Future<SocketClient> initialize() async {
+    StreamController<String> connectionStream;
+    connectionStream = new StreamController.broadcast();
     _client = new WebSocket(this.url);
+    _client.onOpen.listen((e) {
+      connectionStream.add("connected");
+    });
+    await for (var connected in connectionStream.stream) {
+      return this;
+    }
     return this;
   }
 
@@ -61,7 +69,7 @@ class WebSocketClient extends Client.Client implements SocketClient {
   @override
   Future listen( callback) async {
     return _client.onMessage.listen((message) {
-      callback(message);
+      callback(message.data);
     });
   }
 }
