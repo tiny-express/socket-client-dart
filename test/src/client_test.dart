@@ -41,7 +41,6 @@ void main() {
     });
     client.onConnection(() async {
       client.on("UserAuthSignIn", (Message message) async {
-        print('::UserAuthSignIn');
         expect("UserAuthSignIn", equals(message.event));
         expect('{"status": "OK"}', equals(message.message));
       });
