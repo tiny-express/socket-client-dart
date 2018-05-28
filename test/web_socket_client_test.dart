@@ -22,15 +22,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import 'package:test/test.dart';
+import 'package:unittest/unittest.dart';
+import 'package:unittest/html_config.dart';
 import 'package:socket_client_dart/src/client.dart';
-import 'package:socket_client_dart/flutter_socket_client.dart';
+import 'package:socket_client_dart/web_socket_client.dart';
 
 void main() {
-  test("FlutterClient:integration", () async {
+  useHtmlConfiguration();
+  test("WebSocketClient:integration", () async {
     // Client connection is not allowed to retry
     // another connection is connected
-    var client = new FlutterSocketClient('ws://localhost:3000');
+    var client = new WebSocketClient('ws://localhost:3000');
     client.authenticate({
       "scope": "Mobile",
       "version": "v1_0",

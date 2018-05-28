@@ -22,49 +22,33 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-library socket.futter;
-
-import 'dart:io';
-import 'dart:async';
+import 'package:test/test.dart';
 import 'package:socket_client_dart/src/client.dart';
-import 'package:socket_client_dart/src/socket_client.dart';
+import 'package:socket_client_dart/flutter_socket_client.dart';
 
-class FlutterSocketClient extends Client implements SocketClient {
-
-  WebSocket _client;
-
-  FlutterSocketClient(String url) : super(url);
-
-  @override
-  SocketClient getSocket() {
-    return this;
-  }
-
-  Future<SocketClient> initialize() async {
-    _client = await WebSocket.connect(this.url);
-    return this;
-  }
-
-  @override
-  Future connect() async {
-    await emit(Message.REQUEST_ACCESS, this.requestAccess);
-  }
-
-  @override
-  bool isConnected() {
-    return _client != null && _client.readyState == WebSocket.OPEN;
-  }
-
-  @override
-  Future add(String message) async {
-      return await _client.add(message);
-  }
-
-  @override
-  Future listen(Function callback) async {
-    return await _client.listen((message) {
-        callback(message.toString());
+void main() {
+  test("FlutterSocketClient:integration", () async {
+    // Client connection is not allowed to retry
+    // another connection is connected
+    var client = new FlutterSocketClient('ws://localhost:3000');
+    client.authenticate({
+      "scope": "Mobile",
+      "version": "v1_0",
+      "platform": "Android",
+      "device": "Sony Xperia Z",
+      "osVersion": "1234",
+      "ipAddress": "127.0.0.1"
+    });
+    client.onConnection(() async {
+      client.on("UserAuthSignIn", (Message message) async {
+        expect("UserAuthSignIn", equals(message.event));
+        expect('{"status": "OK"}', equals(message.message));
       });
-  }
+      client.onDisconnection(() async {
+      });
+      await client.emit("UserAuthSignIn", {});
+      await client.emit("UserAuthSignIn", {});
+    });
+    await client.connect();
+  });
 }
-

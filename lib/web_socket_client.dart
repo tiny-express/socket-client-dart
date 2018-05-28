@@ -38,8 +38,9 @@ class WebSocketClient extends Client.Client implements SocketClient {
     return this;
   }
 
-  Future initialize() async {
+  Future<SocketClient> initialize() async {
     _client = new WebSocket(this.url);
+    return this;
   }
 
   @override

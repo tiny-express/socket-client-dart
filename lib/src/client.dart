@@ -56,12 +56,11 @@ abstract class Client {
   }
 
   Future<String> transport(String message) async {
-    print('Transport : ' + message);
     if (message.toString().startsWith('connected')) {
       return socket != null && socket.isConnected() ? '1' : '0';
     }
     if (message.toString().startsWith('ws://')) {
-      socket = await getSocket().connect();
+      socket = await getSocket().initialize();
       if (socket.isConnected()) {
         // Create new stream for new connection
         responseStream = new StreamController.broadcast();
@@ -111,7 +110,7 @@ abstract class Client {
     }
     var callback = eventListeners[message.event];
     if (callback == null) {
-      print('Can not process event ' + message.event);
+      print('Can not handle event : ' + message.event);
       return 0;
     }
     await callback(message);
@@ -119,13 +118,11 @@ abstract class Client {
   }
 
   Future<Message> emit(String eventName, dynamic data) async {
-    print('Emit');
     final isConnected = await transport('connected');
     var connected = '1';
     if (isConnected.toString() != '1') {
       connected = await transport(this.url);
     }
-    print('Connected ' + connected.toString());
     if (connected.toString() == '1') {
       var requestMessage = new Message(eventName, data);
       String responseText = null;

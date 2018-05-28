@@ -8,3 +8,4 @@ environment:
 
 dev_dependencies:
   test: ^0.12.0
+  browser_unittest: ^0.4.0
