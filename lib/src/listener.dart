@@ -22,35 +22,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-@TestOn('browser')
+part of client;
 
-import 'package:test/test.dart';
-import 'package:socket_client_dart/src/client.dart';
-import 'package:socket_client_dart/web_socket_client.dart';
-
-void main() {
-  test("WebSocketClient:integration", () async {
-    // Client connection is not allowed to retry
-    // another connection is connected
-    var client = new WebSocketClient('ws://localhost:3000');
-    client.authenticate({
-      "scope": "Mobile",
-      "version": "v1_0",
-      "platform": "Android",
-      "device": "Sony Xperia Z",
-      "osVersion": "1234",
-      "ipAddress": "127.0.0.1"
-    });
-    client.onConnection(() async {
-      client.on("UserAuthSignIn", (Message message) async {
-        expect("UserAuthSignIn", equals(message.event));
-        expect('{"status": "OK"}', equals(message.message));
-      });
-      client.onDisconnection(() async {
-      });
-      await client.emit("UserAuthSignIn", {});
-      await client.emit("UserAuthSignIn", {});
-    });
-    await client.connect();
-  });
+void listen(app, context) {
+  //initializeReflectable();
+  //SocketClient socket = app.getServices("socket");
 }
+

@@ -4,8 +4,10 @@ version: 0.0.4
 author: loint <loint@foodtiny.com>
 
 environment:
-  sdk: '>=1.24.2 <2.0.0'
+sdk: '>=2.0.0-dev.23.0 <2.0.0'
+
+dependencies:
+  shadow_dom: ">=0.10.0 <0.11.0"
 
 dev_dependencies:
-  test: ^0.12.0
-  browser_unittest: ^0.4.0
+  test: ^0.12.8

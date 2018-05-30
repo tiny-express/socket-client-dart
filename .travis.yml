@@ -1,0 +1,20 @@
+language: dart
+sudo: false
+dart: dev
+
+dart_task:
+  - test: --platform vm
+  - test: --platform firefox -j 4
+  - dartanalyzer
+
+matrix:
+  include:
+    - dart: dev
+      dart_task: dartfmt
+
+branches:
+  only: [master]
+
+cache:
+ directories:
+   - $HOME/.pub-cache
