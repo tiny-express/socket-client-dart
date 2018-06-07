@@ -22,10 +22,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-part of client;
+part of socket.client;
 
-void listen(app, context) {
-  //initializeReflectable();
-  //SocketClient socket = app.getServices("socket");
+abstract class SocketAware {
+  void onConnected();
+  void onDisconnected();
 }
-

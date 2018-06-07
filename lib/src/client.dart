@@ -31,7 +31,6 @@ import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'socket_client.dart';
 
-part 'listener.dart';
 part 'message.dart';
 
 abstract class Client {
