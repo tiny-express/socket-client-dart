@@ -25,6 +25,7 @@
 library socket.client;
 
 import 'dart:async';
+part 'socket_aware.dart';
 
 abstract class SocketClient {
   Future<SocketClient> initialize();
