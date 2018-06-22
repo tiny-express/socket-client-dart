@@ -32,6 +32,7 @@ void main() {
   test("FlutterSocketClient:integration", () async {
     // Client connection is not allowed to retry
     // another connection is connected
+    Client.isDebug = true;
     var client = new FlutterSocketClient('ws://localhost:3000');
     client.authenticate({
       "scope": "Mobile",

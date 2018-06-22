@@ -55,13 +55,16 @@ abstract class Client {
     }
   }
 
-  Future<String> transport(String message) async {
-    if (message.toString().startsWith('connected')) {
+  Future<String> transport(String command) async {
+    if (command.toString().startsWith('connected')) {
       return socket != null && socket.isConnected() ? '1' : '0';
     }
-    if (message.toString().startsWith('ws://')) {
+    if (command.toString().startsWith('ws://')) {
+      log('Connecting to ' + command);
       socket = await getSocket().initialize();
       if (socket.isConnected()) {
+        log('Connected ' + command);
+        log('Start listener');
         // Create new stream for new connection
         responseStream = new StreamController.broadcast();
         await socket.listen((textMessage) {
@@ -73,8 +76,8 @@ abstract class Client {
       }
     }
     if (socket.isConnected()) {
-      print('<< [client ] ' + message);
-      socket.add(message);
+      print('<< [client ] ' + command);
+      socket.add(command);
       return responseStream.stream.first;
     }
     return null;
@@ -104,9 +107,23 @@ abstract class Client {
       return 0;
     }
     if (message.event == Message.AUTHENTICATED) {
+      if (lastMessage != null) {
+        var responseText = '';
+        try {
+          responseText = await transport(lastMessage.serialize());
+          lastMessage = null;
+        } catch (e) {}
+        print('>> [server] ' + responseText);
+        var responseMessage = Message.unserialize(responseText);
+        await invoke(responseMessage);
+        return 0;
+      }
+
       if (this.onConnectionCallback != null) {
         return await this.onConnectionCallback();
       }
+
+      return 0;
     }
     var callback = eventListeners[message.event];
     if (callback == null) {
@@ -119,12 +136,18 @@ abstract class Client {
 
   Future<Message> emit(String eventName, dynamic data) async {
     final isConnected = await transport('connected');
+    log('Is socket connected ? ' + isConnected);
     var connected = '1';
+    var requestMessage = new Message(eventName, data);
     if (isConnected.toString() != '1') {
-      connected = await transport(this.url);
+      log('Re-connecting ...');
+      this.lastMessage = requestMessage;
+      await transport(this.url);
+      await emit(Message.REQUEST_ACCESS, this.requestAccess);
+      return null;
     }
+
     if (connected.toString() == '1') {
-      var requestMessage = new Message(eventName, data);
       String responseText = null;
       try {
         responseText = await transport(requestMessage.serialize());
