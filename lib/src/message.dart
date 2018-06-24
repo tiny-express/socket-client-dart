@@ -28,8 +28,7 @@ part of client;
 // Support for serialize and un-serialize
 class Message {
 
-  static const REQUEST_ACCESS = "RequestAccess";
-  static const AUTHENTICATED = "Authenticated";
+  static const PING = "Ping";
   static const ACK = "Ack";
 
   String requestId;

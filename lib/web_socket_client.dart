@@ -38,22 +38,22 @@ class WebSocketClient extends Client.Client implements SocketClient {
     return this;
   }
 
-  Future<SocketClient> initialize() async {
-    StreamController<String> connectionStream;
-    connectionStream = new StreamController.broadcast();
-    _client = new WebSocket(this.url);
-    _client.onOpen.listen((e) {
-      connectionStream.add("connected");
-    });
-    await for (var connected in connectionStream.stream) {
-      return this;
-    }
-    return this;
-  }
-
   @override
   Future connect() async {
-    await emit(Client.Message.REQUEST_ACCESS, this.requestAccess);
+    socket = this;
+    new Timer.periodic(new Duration(seconds: 1), (Timer) async {
+      if (!isConnected()) {
+        log('Connecting to ' + this.url);
+        try {
+          _client = new WebSocket(this.url);
+        } catch (e) {}
+        _client.onOpen.listen((e) {
+          if (this.onConnectionCallback != null) {
+            this.onConnectionCallback();
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -63,14 +63,22 @@ class WebSocketClient extends Client.Client implements SocketClient {
 
   @override
   Future add(String message) async {
-    return await _client.send(message);
+    if (_client != null) {
+      return await _client.send(message);
+    }
+  }
+
+  Future ping() async {
+    return await add(Client.Message.PING);
   }
 
   @override
-  Future listen( callback) async {
-    return _client.onMessage.listen((message) {
+  void listen(Function callback) {
+    if (_client != null) {
+      _client.onMessage.listen((message) {
       callback(message.data);
     });
+    }
   }
 }
 

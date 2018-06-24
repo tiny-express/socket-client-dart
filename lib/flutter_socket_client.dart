@@ -40,14 +40,25 @@ class FlutterSocketClient extends Client implements SocketClient {
     return this;
   }
 
-  Future<SocketClient> initialize() async {
-    _client = await WebSocket.connect(this.url);
-    return this;
-  }
-
   @override
   Future connect() async {
-    await emit(Message.REQUEST_ACCESS, this.requestAccess);
+    socket = this;
+    new Timer.periodic(new Duration(seconds: 1), (Timer) async {
+      if (!isConnected()) {
+        log('Connecting to ' + this.url);
+        try {
+          _client = await WebSocket.connect(this.url);
+        } catch (e) {}
+        if (isConnected() && this.onConnectionCallback != null) {
+          listenResponse();
+          this.onConnectionCallback();
+        }
+      }
+    });
+  }
+
+  Future ping() async {
+    return await add(Message.ACK);
   }
 
   @override
@@ -57,14 +68,18 @@ class FlutterSocketClient extends Client implements SocketClient {
 
   @override
   Future add(String message) async {
+    if (_client != null) {
       return await _client.add(message);
+    }
   }
 
   @override
-  Future listen(Function callback) async {
-    return await _client.listen((message) {
+  void listen(Function callback) {
+    if (_client != null) {
+      _client.listen((message) {
         callback(message.toString());
       });
+    }
   }
 }
 

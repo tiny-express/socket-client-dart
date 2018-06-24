@@ -1,0 +1,14 @@
+name: example
+description: Socket Client for Dart
+version: 0.0.6
+author: loint <loint@foodtiny.com>
+
+environment:
+  sdk: '>=2.0.0-dev.23.0 <2.0.0'
+
+dependencies:
+  socket_client_dart:
+      path: ../
+
+dev_dependencies:
+  test: ^0.12.8

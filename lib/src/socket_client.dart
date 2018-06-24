@@ -28,9 +28,9 @@ import 'dart:async';
 part 'socket_aware.dart';
 
 abstract class SocketClient {
-  Future<SocketClient> initialize();
   Future connect();
   bool isConnected();
+  Future ping();
   Future add(String message);
-  Future listen(Function callback);
+  void listen(Function callback);
 }

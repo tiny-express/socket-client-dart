@@ -34,53 +34,23 @@ import 'socket_client.dart';
 part 'message.dart';
 
 abstract class Client {
+
   String url;
   dynamic requestAccess;
   Function onConnectionCallback;
   Function onDisconnectionCallback;
   dynamic eventListeners = {};
-  static bool isDebug = false;
   Message lastMessage = null;
   StreamController<String> responseStream;
   SocketClient socket;
+  bool debug;
 
   Client(this.url);
 
-  SocketClient getSocket();
-
-  // Enable logging for debug mode
-  static void log(String message) {
-    if (isDebug) {
+  void log(String message) {
+    if (debug) {
       print(message);
     }
-  }
-
-  Future<String> transport(String command) async {
-    if (command.toString().startsWith('connected')) {
-      return socket != null && socket.isConnected() ? '1' : '0';
-    }
-    if (command.toString().startsWith('ws://')) {
-      log('Connecting to ' + command);
-      socket = await getSocket().initialize();
-      if (socket.isConnected()) {
-        log('Connected ' + command);
-        log('Start listener');
-        // Create new stream for new connection
-        responseStream = new StreamController.broadcast();
-        await socket.listen((textMessage) {
-          responseStream.add(textMessage);
-        });
-        return '1';
-      } else {
-        return '0';
-      }
-    }
-    if (socket.isConnected()) {
-      print('<< [client ] ' + command);
-      socket.add(command);
-      return responseStream.stream.first;
-    }
-    return null;
   }
 
   void onConnection(Function onConnectionCallback) {
@@ -93,6 +63,7 @@ abstract class Client {
   }
 
   Client on(String eventName, Function onMessageCallback) {
+    log('Listening: ' + eventName);
     eventListeners[eventName] = onMessageCallback;
     return this;
   }
@@ -102,62 +73,33 @@ abstract class Client {
     return this;
   }
 
-  Future<int> invoke(Message message) async {
+  Future<bool> invoke(Message message) async {
     if ((message == null) || message.event.length == 0) {
-      return 0;
-    }
-    if (message.event == Message.AUTHENTICATED) {
-      if (lastMessage != null) {
-        var responseText = '';
-        try {
-          responseText = await transport(lastMessage.serialize());
-          lastMessage = null;
-        } catch (e) {}
-        print('>> [server] ' + responseText);
-        var responseMessage = Message.unserialize(responseText);
-        await invoke(responseMessage);
-        return 0;
-      }
-
-      if (this.onConnectionCallback != null) {
-        return await this.onConnectionCallback();
-      }
-
-      return 0;
+      return false;
     }
     var callback = eventListeners[message.event];
     if (callback == null) {
       print('Can not handle event : ' + message.event);
-      return 0;
+      return false;
     }
     await callback(message);
-    return 0;
+    return true;
   }
 
-  Future<Message> emit(String eventName, dynamic data) async {
-    final isConnected = await transport('connected');
-    log('Is socket connected ? ' + isConnected);
-    var connected = '1';
-    var requestMessage = new Message(eventName, data);
-    if (isConnected.toString() != '1') {
-      log('Re-connecting ...');
-      this.lastMessage = requestMessage;
-      await transport(this.url);
-      await emit(Message.REQUEST_ACCESS, this.requestAccess);
-      return null;
+  Future<bool> emit(String eventName, dynamic message) async {
+    lastMessage = new Message(eventName, message);
+    if (socket.isConnected()) {
+      socket.add(lastMessage.serialize());
+      lastMessage = null;
+      return true;
     }
+    return false;
+  }
 
-    if (connected.toString() == '1') {
-      String responseText = null;
-      try {
-        responseText = await transport(requestMessage.serialize());
-        lastMessage = null;
-      } catch (e) {}
-      print('>> [server] ' + responseText);
-      var responseMessage = Message.unserialize(responseText);
-      await invoke(responseMessage);
-      return responseMessage;
-    }
-    return null;
+  Future listenResponse() async {
+    socket.listen((textMessage) {
+      var message = Message.unserialize(textMessage);
+      invoke(message);
+    });
   }
 }
