@@ -101,5 +101,8 @@ abstract class Client {
       var message = Message.unserialize(textMessage);
       invoke(message);
     });
+    if (lastMessage != null) {
+      await emit(lastMessage.event, lastMessage.message);
+    }
   }
 }
