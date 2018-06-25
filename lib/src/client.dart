@@ -35,15 +35,15 @@ part 'message.dart';
 
 abstract class Client {
 
-  String url;
-  dynamic requestAccess;
+  String url = '';
+  dynamic requestAccess = null;
   Function onConnectionCallback;
   Function onDisconnectionCallback;
   dynamic eventListeners = {};
   Message lastMessage = null;
-  StreamController<String> responseStream;
-  SocketClient socket;
-  bool debug;
+  StreamController<String> responseStream = null;
+  SocketClient socket = null;
+  bool debug = false;
 
   Client(this.url);
 
@@ -101,8 +101,5 @@ abstract class Client {
       var message = Message.unserialize(textMessage);
       invoke(message);
     });
-    if (lastMessage != null) {
-      await emit(lastMessage.event, lastMessage.message);
-    }
   }
 }
