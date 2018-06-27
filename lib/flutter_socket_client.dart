@@ -43,6 +43,7 @@ class FlutterSocketClient extends Client implements SocketClient {
   @override
   Future connect() async {
     socket = this;
+    bool isSubscribed = false;
     new Timer.periodic(new Duration(seconds: 1), (Timer timer) async {
       if (!isConnected()) {
         log('Connecting to ' + this.url);
@@ -50,7 +51,10 @@ class FlutterSocketClient extends Client implements SocketClient {
           _client = await WebSocket.connect(this.url);
         } catch (e) {}
         if (isConnected() && this.onConnectionCallback != null) {
-          listenResponse();
+          if (!isSubscribed) {
+            listenResponse();
+            isSubscribed = true;
+          }
           this.onConnectionCallback();
           if (lastMessage != null) {
             await emit(lastMessage.event, lastMessage.message);

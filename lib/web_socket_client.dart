@@ -41,6 +41,7 @@ class WebSocketClient extends Client.Client implements SocketClient {
   @override
   Future connect() async {
     socket = this;
+    bool isSubscribed = false;
     new Timer.periodic(new Duration(seconds: 1), (Timer timer) async {
       if (!isConnected()) {
         log('Connecting to ' + this.url);
@@ -48,7 +49,10 @@ class WebSocketClient extends Client.Client implements SocketClient {
           _client = new WebSocket(this.url);
         } catch (e) {}
         _client.onOpen.listen((e) async{
-          listenResponse();
+          if (!isSubscribed) {
+            listenResponse();
+            isSubscribed = true;
+          }
           if (isConnected() && this.onConnectionCallback != null) {
             listenResponse();
             this.onConnectionCallback();
