@@ -69,7 +69,7 @@ abstract class Client {
     }
     var callback = eventListeners[message.event];
     if (callback == null) {
-      print('Can not handle event : ' + message.event);
+      log('Can not handle event : ' + message.event);
       return false;
     }
     await callback(message);
@@ -80,6 +80,7 @@ abstract class Client {
     lastMessage = new Message(eventName, payload);
     if (socket.isConnected()) {
       socket.add(lastMessage.toString());
+      log('Sent package: ' + lastMessage.toString());
       lastMessage = null;
       return true;
     }

@@ -44,21 +44,31 @@ class FlutterSocketClient extends Client implements SocketClient {
   Future connect() async {
     socket = this;
     bool isSubscribed = false;
-    new Timer.periodic(new Duration(seconds: 1), (Timer timer) async {
-      if (!isConnected()) {
+    bool isConnecting = false;
+    new Timer.periodic(new Duration(milliseconds: 100), (Timer timer) async {
+      if (!isConnected() && !isConnecting) {
+        isConnecting = true;
         log('Connecting to ' + this.url);
         try {
           _client = await WebSocket.connect(this.url);
-        } catch (e) {}
-        if (isConnected() && this.onConnectionCallback != null) {
+          if (!isConnected()) {
+            throw Exception('Can not connect to ' + this.url);
+          }
+          log('Connected to ' + this.url);
           if (!isSubscribed) {
             listenResponse();
             isSubscribed = true;
           }
-          this.onConnectionCallback();
-          if (lastMessage != null) {
-            await emit(lastMessage.event, lastMessage.payload);
+          if (this.onConnectionCallback != null) {
+            await this.onConnectionCallback();
+            if (lastMessage != null) {
+              await emit(lastMessage.event, lastMessage.payload);
+            }
           }
+        } catch (e) {
+          print(e);
+        } finally {
+          isConnecting = false;
         }
       }
     });
@@ -66,7 +76,7 @@ class FlutterSocketClient extends Client implements SocketClient {
 
   @override
   bool isConnected() {
-    return _client != null && _client.readyState == WebSocket.open;
+    return _client != null && _client.readyState == WebSocket.OPEN;
   }
 
   @override
