@@ -4,10 +4,10 @@ version: 0.0.9
 author: loint <loint@foodtiny.com>
 
 environment:
-sdk: '>=2.0.0-dev.23.0 <2.0.0'
+sdk: '>=2.0.0'
 
 dependencies:
   shadow_dom: ">=0.10.0 <0.11.0"
 
 dev_dependencies:
-  test: ^0.12.8
+  test: ^1.3.0

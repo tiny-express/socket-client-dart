@@ -66,7 +66,7 @@ class FlutterSocketClient extends Client implements SocketClient {
 
   @override
   bool isConnected() {
-    return _client != null && _client.readyState == WebSocket.OPEN;
+    return _client != null && _client.readyState == WebSocket.open;
   }
 
   @override
