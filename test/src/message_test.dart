@@ -26,45 +26,24 @@ import 'package:test/test.dart';
 import 'package:socket_client_dart/src/client.dart';
 
 void main() {
+
   group("Message", () {
-
-    test('constructor', () async {
-      var message = new Message(
-          "onUserSignIn", {"username": "loint", "password": "123456"});
-      expect(message.requestId.length, greaterThan(0));
-      expect(message.event, equals("onUserSignIn"));
-      expect(
-          message.message, equals('{"username":"loint","password":"123456"}'));
+    test('Constructor', () async {
+      var message = new Message("onUserSignIn", "abcd");
+      expect( message.event, equals("onUserSignIn"));
+      expect( message.payload, equals("abcd"));
     });
 
-    test('serialize', () async {
-      var message = new Message(
-          "onUserSignIn", {"username": "loint", "password": "123456"});
-      expect(message.requestId.length, greaterThan(0));
-      expect(message.event, equals("onUserSignIn"));
-      expect(
-          message.message, equals('{"username":"loint","password":"123456"}'));
+    test('FromString', () async {
+      var message = Message.fromString("UserSignIn.abcd");
+      expect(message.event, equals('UserSignIn'));
+      expect(message.payload, equals('abcd'));
     });
 
-    test('serialization', () async {
-      var message = new Message(
-          "onUserSignIn", {"username": "loint", "password": "123456"});
-      expect(message
-          .serialize()
-          .length, greaterThan(0));
-      // Un-serialize message again to verify information
-      var unserializedMessage = Message.unserialize(message.serialize());
-      expect(unserializedMessage.requestId, equals(message.requestId));
-      expect(unserializedMessage.event, equals(message.event));
-      expect(unserializedMessage.message, equals(message.message));
+    test('ToString', () async {
+      var message = new Message("onUserSignIn", "xyz");
+      expect(message.toString(), equals('onUserSignIn.xyz'));
     });
 
-    test('generateRequestId', () async {
-      var message1 = new Message(
-          "onUserSignIn", {"username": "loinp", "password": "123456"});
-      var message2 = new Message(
-          "onUserSignIn", {"username": "loinp123", "password": "123456"});
-      expect(message1.generateRequestId(), isNot(message2.generateRequestId()));
-    });
   });
 }

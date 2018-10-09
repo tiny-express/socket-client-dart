@@ -57,7 +57,7 @@ class WebSocketClient extends Client.Client implements SocketClient {
             listenResponse();
             this.onConnectionCallback();
             if (lastMessage != null) {
-              await emit(lastMessage.event, lastMessage.message);
+              await emit(lastMessage.event, lastMessage.payload);
             }
           }
         });
@@ -75,10 +75,6 @@ class WebSocketClient extends Client.Client implements SocketClient {
     if (_client != null) {
       return await _client.send(message);
     }
-  }
-
-  Future ping() async {
-    return await add(Client.Message.PING);
   }
 
   @override

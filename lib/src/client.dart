@@ -25,12 +25,7 @@
 library client;
 
 import 'dart:async';
-import 'dart:convert';
-import 'dart:math';
-import 'package:convert/convert.dart';
-import 'package:crypto/crypto.dart' as crypto;
 import 'socket_client.dart';
-
 part 'message.dart';
 
 abstract class Client {
@@ -68,11 +63,6 @@ abstract class Client {
     return this;
   }
 
-  Client authenticate(dynamic requestAccess) {
-    this.requestAccess = requestAccess;
-    return this;
-  }
-
   Future<bool> invoke(Message message) async {
     if ((message == null) || message.event.length == 0) {
       return false;
@@ -86,10 +76,10 @@ abstract class Client {
     return true;
   }
 
-  Future<bool> emit(String eventName, dynamic message) async {
-    lastMessage = new Message(eventName, message);
+  Future<bool> emit(String eventName, String payload) async {
+    lastMessage = new Message(eventName, payload);
     if (socket.isConnected()) {
-      socket.add(lastMessage.serialize());
+      socket.add(lastMessage.toString());
       lastMessage = null;
       return true;
     }
@@ -98,7 +88,7 @@ abstract class Client {
 
   Future listenResponse() async {
     socket.listen((textMessage) {
-      var message = Message.unserialize(textMessage);
+      var message = Message.fromString(textMessage);
       invoke(message);
     });
   }

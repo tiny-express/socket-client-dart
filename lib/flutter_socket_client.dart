@@ -57,15 +57,11 @@ class FlutterSocketClient extends Client implements SocketClient {
           }
           this.onConnectionCallback();
           if (lastMessage != null) {
-            await emit(lastMessage.event, lastMessage.message);
+            await emit(lastMessage.event, lastMessage.payload);
           }
         }
       }
     });
-  }
-
-  Future ping() async {
-    return await add(Message.ACK);
   }
 
   @override
