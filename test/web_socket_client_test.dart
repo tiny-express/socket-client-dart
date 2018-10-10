@@ -37,8 +37,7 @@ void main() {
       client.on("UserAuthSignIn", (Message message) async {
         expect("UserAuthSignIn", equals(message.event));
       });
-      client.onDisconnection(() async {
-      });
+      client.onDisconnection(() async {});
       await client.emit("UserAuthSignIn", "abcx");
       await client.emit("UserAuthSignIn", "abxy");
     });

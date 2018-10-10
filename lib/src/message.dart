@@ -27,7 +27,6 @@ part of client;
 // Message entity is a data inter-change format
 // Support for serialize and un-serialize
 class Message {
-
   String event;
   String payload;
 

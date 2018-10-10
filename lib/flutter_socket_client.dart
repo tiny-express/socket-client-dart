@@ -30,7 +30,6 @@ import 'package:socket_client_dart/src/client.dart';
 import 'package:socket_client_dart/src/socket_client.dart';
 
 class FlutterSocketClient extends Client implements SocketClient {
-
   WebSocket _client;
 
   FlutterSocketClient(String url) : super(url);
@@ -95,4 +94,3 @@ class FlutterSocketClient extends Client implements SocketClient {
     }
   }
 }
-

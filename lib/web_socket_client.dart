@@ -30,7 +30,6 @@ import 'package:socket_client_dart/src/client.dart' as Client;
 import 'package:socket_client_dart/src/socket_client.dart';
 
 class WebSocketClient extends Client.Client implements SocketClient {
-
   WebSocket _client;
   WebSocketClient(String url) : super(url);
 
@@ -48,7 +47,7 @@ class WebSocketClient extends Client.Client implements SocketClient {
         try {
           _client = new WebSocket(this.url);
         } catch (e) {}
-        _client.onOpen.listen((e) async{
+        _client.onOpen.listen((e) async {
           if (!isSubscribed) {
             listenResponse();
             isSubscribed = true;
@@ -81,9 +80,8 @@ class WebSocketClient extends Client.Client implements SocketClient {
   void listen(Function callback) {
     if (_client != null) {
       _client.onMessage.listen((message) {
-      callback(message.data);
-    });
+        callback(message.data);
+      });
     }
   }
 }
-

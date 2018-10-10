@@ -26,12 +26,11 @@ import 'package:test/test.dart';
 import 'package:socket_client_dart/src/client.dart';
 
 void main() {
-
   group("Message", () {
     test('Constructor', () async {
       var message = new Message("onUserSignIn", "abcd");
-      expect( message.event, equals("onUserSignIn"));
-      expect( message.payload, equals("abcd"));
+      expect(message.event, equals("onUserSignIn"));
+      expect(message.payload, equals("abcd"));
     });
 
     test('FromString', () async {
@@ -44,6 +43,5 @@ void main() {
       var message = new Message("onUserSignIn", "xyz");
       expect(message.toString(), equals('onUserSignIn.xyz'));
     });
-
   });
 }

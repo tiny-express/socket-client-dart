@@ -29,7 +29,6 @@ import 'socket_client.dart';
 part 'message.dart';
 
 abstract class Client {
-
   String url = '';
   dynamic requestAccess = null;
   Function onConnectionCallback;
