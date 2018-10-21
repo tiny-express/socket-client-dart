@@ -34,6 +34,16 @@ class Message {
     this.event = event;
     this.payload = message;
   }
+  
+  List<int> bufferPayload() {
+    String rawPayload = payload.substring(1, payload.length - 1);
+    List<String> payloadBytes = rawPayload.split(",");
+    List<int> buffer = new List(payloadBytes.length);
+    for (int index=0; index<payloadBytes.length; index++) {
+      buffer[index] = int.parse(payloadBytes[index].trim());
+    }
+    return buffer;
+  }
 
   // Decode text message to message object
   // Support for retrieving data from server
