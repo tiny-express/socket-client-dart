@@ -43,16 +43,11 @@ class FlutterSocketClient extends Client implements SocketClient {
   Future connect() async {
     socket = this;
     bool isSubscribed = false;
-    bool isConnecting = false;
-    new Timer.periodic(new Duration(milliseconds: 100), (Timer timer) async {
-      if (!isConnected() && !isConnecting) {
-        isConnecting = true;
+    new Timer.periodic(new Duration(seconds: 5), (Timer timer) async {
+      if (!isConnected() && !isConnecting()) {
         log('Connecting to ' + this.url);
         try {
           _client = await WebSocket.connect(this.url);
-          if (!isConnected()) {
-            throw Exception('Can not connect to ' + this.url);
-          }
           log('Connected to ' + this.url);
           if (!isSubscribed) {
             listenResponse();
@@ -60,17 +55,20 @@ class FlutterSocketClient extends Client implements SocketClient {
           }
           if (this.onConnectionCallback != null) {
             await this.onConnectionCallback();
-            if (lastMessage != null) {
-              await emit(lastMessage.event, lastMessage.payload);
+            if (lastPackage != null) {
+              await emit(lastPackage.event, lastPackage.payload);
             }
           }
         } catch (e) {
           print(e);
-        } finally {
-          isConnecting = false;
         }
       }
     });
+  }
+
+  @override
+  bool isConnecting() {
+    return _client != null && _client.readyState == WebSocket.connecting;
   }
 
   @override
@@ -79,17 +77,17 @@ class FlutterSocketClient extends Client implements SocketClient {
   }
 
   @override
-  Future add(String message) async {
+  Future add(String package) async {
     if (_client != null) {
-      return await _client.add(message);
+      return await _client.add(package);
     }
   }
 
   @override
   void listen(Function callback) {
     if (_client != null) {
-      _client.listen((message) {
-        callback(message.toString());
+      _client.listen((package) {
+        callback(package.toString());
       });
     }
   }

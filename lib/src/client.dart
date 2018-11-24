@@ -26,24 +26,25 @@ library client;
 
 import 'dart:async';
 import 'socket_client.dart';
-part 'message.dart';
+part 'package.dart';
 
 abstract class Client {
+  
   String url = '';
   dynamic requestAccess = null;
   Function onConnectionCallback;
   Function onDisconnectionCallback;
   dynamic eventListeners = {};
-  Message lastMessage = null;
+  Package lastPackage = null;
   StreamController<String> responseStream = null;
   SocketClient socket = null;
   bool debug = false;
 
   Client(this.url);
 
-  void log(String message) {
+  void log(String package) {
     if (debug) {
-      print(message);
+      print(package);
     }
   }
 
@@ -56,40 +57,40 @@ abstract class Client {
     return this;
   }
 
-  Client on(String eventName, Function onMessageCallback) {
+  Client on(String eventName, Function onPackageCallback) {
     log('Listening: ' + eventName);
-    eventListeners[eventName] = onMessageCallback;
+    eventListeners[eventName] = onPackageCallback;
     return this;
   }
 
-  Future<bool> invoke(Message message) async {
-    if ((message == null) || message.event.length == 0) {
+  Future<bool> invoke(Package package) async {
+    if ((package == null) || package.event.length == 0) {
       return false;
     }
-    var callback = eventListeners[message.event];
+    var callback = eventListeners[package.event];
     if (callback == null) {
-      log('Can not handle event : ' + message.event);
+      log('Can not handle event : ' + package.event);
       return false;
     }
-    await callback(message);
+    await callback(package);
     return true;
   }
 
   Future<bool> emit(String eventName, String payload) async {
-    lastMessage = new Message(eventName, payload);
+    lastPackage = new Package(eventName, payload);
     if (socket.isConnected()) {
-      socket.add(lastMessage.toString());
-      log('Sent package: ' + lastMessage.toString());
-      lastMessage = null;
+      socket.add(lastPackage.toString());
+      log('Sent package: ' + lastPackage.toString());
+      lastPackage = null;
       return true;
     }
     return false;
   }
 
   Future listenResponse() async {
-    socket.listen((textMessage) {
-      var message = Message.fromString(textMessage);
-      invoke(message);
+    socket.listen((textPackage) {
+      var package = Package.fromString(textPackage);
+      invoke(package);
     });
   }
 }

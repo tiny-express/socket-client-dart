@@ -22,46 +22,26 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-part of client;
+import 'package:test/test.dart';
+import 'package:socket_client_dart/src/client.dart';
 
-// Message entity is a data inter-change format
-// Support for serialize and un-serialize
-class Message {
-  String event;
-  String payload;
+void main() {
+  group("Package", () {
+    test('Constructor', () async {
+      var package = new Package("onUserSignIn", "abcd");
+      expect(package.event, equals("onUserSignIn"));
+      expect(package.payload, equals("abcd"));
+    });
 
-  Message(String event, String message) {
-    this.event = event;
-    this.payload = message;
-  }
-  
-  List<int> bufferPayload() {
-    String rawPayload = payload.substring(1, payload.length - 1);
-    List<String> payloadBytes = rawPayload.split(",");
-    List<int> buffer = new List(payloadBytes.length);
-    for (int index=0; index<payloadBytes.length; index++) {
-      buffer[index] = int.parse(payloadBytes[index].trim());
-    }
-    return buffer;
-  }
+    test('FromString', () async {
+      var package = Package.fromString("UserSignIn.abcd");
+      expect(package.event, equals('UserSignIn'));
+      expect(package.payload, equals('abcd'));
+    });
 
-  // Decode text message to message object
-  // Support for retrieving data from server
-  static Message fromString(String textMessage) {
-    if (textMessage == null) {
-      return null;
-    }
-    var messageComponents = textMessage.split(".");
-    if (messageComponents.length != 2) {
-      return null;
-    }
-    var eventName = messageComponents[0];
-    var payload = messageComponents[1];
-    return new Message(eventName, payload);
-  }
-
-  // Serialize data for transferring
-  String toString() {
-    return event + "." + payload;
-  }
+    test('ToString', () async {
+      var package = new Package("onUserSignIn", "xyz");
+      expect(package.toString(), equals('onUserSignIn.xyz'));
+    });
+  });
 }

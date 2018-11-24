@@ -41,15 +41,14 @@ class WebSocketClient extends Client.Client implements SocketClient {
   Future connect() async {
     socket = this;
     bool isSubscribed = false;
-    new Timer.periodic(new Duration(seconds: 3), (Timer timer) async {
-      if (!isConnected()) {
+    new Timer.periodic(new Duration(seconds: 5), (Timer timer) async {
+      if (!isConnected() && !isConnecting()) {
         log('Connecting to ' + this.url);
         try {
           _client = new WebSocket(this.url);
-        } catch (e) {
-          print(e);
-        }
+        } catch (e) {}
         _client.onOpen.listen((e) async {
+          log('Connected to ' + this.url);
           if (!isSubscribed) {
             listenResponse();
             isSubscribed = true;
@@ -57,8 +56,8 @@ class WebSocketClient extends Client.Client implements SocketClient {
           if (isConnected() && this.onConnectionCallback != null) {
             listenResponse();
             this.onConnectionCallback();
-            if (lastMessage != null) {
-              await emit(lastMessage.event, lastMessage.payload);
+            if (lastPackage != null) {
+              await emit(lastPackage.event, lastPackage.payload);
             }
           }
         });
@@ -67,22 +66,27 @@ class WebSocketClient extends Client.Client implements SocketClient {
   }
 
   @override
+  bool isConnecting() {
+    return _client != null && _client.readyState == WebSocket.CONNECTING;
+  }
+  
+  @override
   bool isConnected() {
     return _client != null && _client.readyState == WebSocket.OPEN;
   }
 
   @override
-  Future add(String message) async {
+  Future add(String package) async {
     if (_client != null) {
-      return await _client.send(message);
+      return await _client.send(package);
     }
   }
 
   @override
   void listen(Function callback) {
     if (_client != null) {
-      _client.onMessage.listen((message) {
-        callback(message.data);
+      _client.onMessage.listen((package) {
+        callback(package.data);
       });
     }
   }

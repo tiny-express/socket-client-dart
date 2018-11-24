@@ -29,6 +29,7 @@ part 'socket_aware.dart';
 
 abstract class SocketClient {
   Future connect();
+  bool isConnecting();
   bool isConnected();
   Future add(String message);
   void listen(Function callback);

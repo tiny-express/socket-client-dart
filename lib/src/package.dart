@@ -22,26 +22,47 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import 'package:test/test.dart';
-import 'package:socket_client_dart/src/client.dart';
+part of client;
 
-void main() {
-  group("Message", () {
-    test('Constructor', () async {
-      var message = new Message("onUserSignIn", "abcd");
-      expect(message.event, equals("onUserSignIn"));
-      expect(message.payload, equals("abcd"));
-    });
+// Package entity is a data inter-change format
+// Support for serialize and un-serialize
+class Package {
+  
+  String event;
+  String payload;
 
-    test('FromString', () async {
-      var message = Message.fromString("UserSignIn.abcd");
-      expect(message.event, equals('UserSignIn'));
-      expect(message.payload, equals('abcd'));
-    });
+  Package(String event, String package) {
+    this.event = event;
+    this.payload = package;
+  }
+  
+  List<int> bufferPayload() {
+    String rawPayload = payload.substring(1, payload.length - 1);
+    List<String> payloadBytes = rawPayload.split(",");
+    List<int> buffer = new List(payloadBytes.length);
+    for (int index=0; index<payloadBytes.length; index++) {
+      buffer[index] = int.parse(payloadBytes[index].trim());
+    }
+    return buffer;
+  }
 
-    test('ToString', () async {
-      var message = new Message("onUserSignIn", "xyz");
-      expect(message.toString(), equals('onUserSignIn.xyz'));
-    });
-  });
+  // Decode text package to package object
+  // Support for retrieving data from server
+  static Package fromString(String textPackage) {
+    if (textPackage == null) {
+      return null;
+    }
+    var packageComponents = textPackage.split(".");
+    if (packageComponents.length != 2) {
+      return null;
+    }
+    var eventName = packageComponents[0];
+    var payload = packageComponents[1];
+    return new Package(eventName, payload);
+  }
+
+  // Serialize data for transferring
+  String toString() {
+    return event + "." + payload;
+  }
 }

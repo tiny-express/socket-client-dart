@@ -34,8 +34,8 @@ void main() {
     // another connection is connected
     var client = new WebSocketClient('ws://localhost:8080');
     client.onConnection(() async {
-      client.on("UserAuthSignIn", (Message message) async {
-        expect("UserAuthSignIn", equals(message.event));
+      client.on("UserAuthSignIn", (Package package) async {
+        expect("UserAuthSignIn", equals(package.event));
       });
       client.onDisconnection(() async {});
       await client.emit("UserAuthSignIn", "abcx");

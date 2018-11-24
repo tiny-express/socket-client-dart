@@ -35,8 +35,8 @@ void main() {
     var client = new FlutterSocketClient('ws://localhost:8080');
     client.debug = true;
     client.onConnection(() async {
-      client.on("UserAuthSignIn", (Message message) async {
-        expect("UserAuthSignIn", equals(message.event));
+      client.on("UserAuthSignIn", (Package package) async {
+        expect("UserAuthSignIn", equals(package.event));
       });
       client.onDisconnection(() async {});
       await client.emit("UserAuthSignIn", "abcd");
