@@ -1,6 +1,6 @@
 name: socket_client_dart
 description: Socket Client for Dart
-version: 0.2.1
+version: 0.2.2
 author: loint <loint@foodtiny.com>
 
 environment:
