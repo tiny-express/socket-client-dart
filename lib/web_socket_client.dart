@@ -41,12 +41,14 @@ class WebSocketClient extends Client.Client implements SocketClient {
   Future connect() async {
     socket = this;
     bool isSubscribed = false;
-    new Timer.periodic(new Duration(seconds: 1), (Timer timer) async {
+    new Timer.periodic(new Duration(seconds: 3), (Timer timer) async {
       if (!isConnected()) {
         log('Connecting to ' + this.url);
         try {
           _client = new WebSocket(this.url);
-        } catch (e) {}
+        } catch (e) {
+          print(e);
+        }
         _client.onOpen.listen((e) async {
           if (!isSubscribed) {
             listenResponse();
