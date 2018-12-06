@@ -30,6 +30,7 @@ import 'package:socket_client_dart/src/client.dart' as Client;
 import 'package:socket_client_dart/src/socket_client.dart';
 
 class WebSocketClient extends Client.Client implements SocketClient {
+  
   WebSocket _client;
   WebSocketClient(String url) : super(url);
 

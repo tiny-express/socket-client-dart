@@ -80,7 +80,6 @@ abstract class Client {
     lastPackage = new Package(eventName, payload);
     if (socket.isConnected()) {
       socket.add(lastPackage.toString());
-      log('Sent package: ' + lastPackage.toString());
       lastPackage = null;
       return true;
     }

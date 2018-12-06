@@ -30,8 +30,8 @@ import 'package:socket_client_dart/src/client.dart';
 import 'package:socket_client_dart/src/socket_client.dart';
 
 class FlutterSocketClient extends Client implements SocketClient {
-  WebSocket _client;
 
+  WebSocket _client;
   FlutterSocketClient(String url) : super(url);
 
   @override
@@ -75,7 +75,7 @@ class FlutterSocketClient extends Client implements SocketClient {
   bool isConnected() {
     return _client != null && _client.readyState == WebSocket.open;
   }
-
+  
   @override
   Future add(String package) async {
     if (_client != null) {
