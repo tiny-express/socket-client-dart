@@ -55,7 +55,6 @@ class WebSocketClient extends Client.Client implements SocketClient {
             isSubscribed = true;
           }
           if (isConnected() && this.onConnectionCallback != null) {
-            listenResponse();
             this.onConnectionCallback();
             if (lastPackage != null) {
               await emit(lastPackage.event, lastPackage.payload);
