@@ -33,6 +33,7 @@ class WebSocketClient extends Client.Client implements SocketClient {
   
   WebSocket _client;
   WebSocketClient(String url) : super(url);
+  bool isSubscribed = false;
 
   SocketClient getSocket() {
     return this;
@@ -40,26 +41,24 @@ class WebSocketClient extends Client.Client implements SocketClient {
 
   @override
   Future connect() async {
-    socket = this;
-    bool isSubscribed = false;
     retry();
     new Timer.periodic(new Duration(seconds: 5), (Timer timer) async { retry(); });
   }
 
   void retry() {
     if (!isConnected() && !isConnecting()) {
-      log('Connecting to ' + this.url);
+      log('Connecting to ' + url);
       try {
-        _client = new WebSocket(this.url);
+        _client = new WebSocket(url);
       } catch (e) {}
       _client.onOpen.listen((e) async {
-        log('Connected to ' + this.url);
+        log('Connected to ' + url);
         if (!isSubscribed) {
           listenResponse();
           isSubscribed = true;
         }
-        if (isConnected() && this.onConnectionCallback != null) {
-          this.onConnectionCallback();
+        if (isConnected() && onConnectionCallback != null) {
+          onConnectionCallback();
           if (lastPackage != null) {
             await emit(lastPackage.event, lastPackage.payload);
           }
