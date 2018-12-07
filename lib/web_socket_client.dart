@@ -42,27 +42,30 @@ class WebSocketClient extends Client.Client implements SocketClient {
   Future connect() async {
     socket = this;
     bool isSubscribed = false;
-    new Timer.periodic(new Duration(seconds: 5), (Timer timer) async {
-      if (!isConnected() && !isConnecting()) {
-        log('Connecting to ' + this.url);
-        try {
-          _client = new WebSocket(this.url);
-        } catch (e) {}
-        _client.onOpen.listen((e) async {
-          log('Connected to ' + this.url);
-          if (!isSubscribed) {
-            listenResponse();
-            isSubscribed = true;
+    retry();
+    new Timer.periodic(new Duration(seconds: 5), (Timer timer) async { retry(); });
+  }
+
+  void retry() {
+    if (!isConnected() && !isConnecting()) {
+      log('Connecting to ' + this.url);
+      try {
+        _client = new WebSocket(this.url);
+      } catch (e) {}
+      _client.onOpen.listen((e) async {
+        log('Connected to ' + this.url);
+        if (!isSubscribed) {
+          listenResponse();
+          isSubscribed = true;
+        }
+        if (isConnected() && this.onConnectionCallback != null) {
+          this.onConnectionCallback();
+          if (lastPackage != null) {
+            await emit(lastPackage.event, lastPackage.payload);
           }
-          if (isConnected() && this.onConnectionCallback != null) {
-            this.onConnectionCallback();
-            if (lastPackage != null) {
-              await emit(lastPackage.event, lastPackage.payload);
-            }
-          }
-        });
-      }
-    });
+        }
+      });
+    }
   }
 
   @override
