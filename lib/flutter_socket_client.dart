@@ -42,11 +42,12 @@ class FlutterSocketClient extends Client implements SocketClient {
 
   @override
   Future connect() async {
+    socket = this;
     retry();
     new Timer.periodic(new Duration(seconds: 5), (Timer timer) async { retry(); });
   }
 
-  void retry() {
+  void retry() async {
     if (!isConnected() && !isConnecting()) {
       log('Connecting to ' + url);
       try {

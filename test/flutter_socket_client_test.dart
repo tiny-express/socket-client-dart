@@ -32,7 +32,7 @@ void main() {
   test("FlutterSocketClient:integration", () async {
     // Client connection is not allowed to retry
     // another connection is connected
-    var client = new FlutterSocketClient('ws://localhost:8080');
+    var client = new FlutterSocketClient('wss://localhost:8080');
     client.debug = true;
     client.onConnection(() async {
       client.on("UserAuthSignIn", (Package package) async {

@@ -41,29 +41,32 @@ class WebSocketClient extends Client.Client implements SocketClient {
 
   @override
   Future connect() async {
-    retry();
-    new Timer.periodic(new Duration(seconds: 5), (Timer timer) async { retry(); });
+    socket = this;
+    await retry();
+    new Timer.periodic(new Duration(seconds: 5), (Timer timer) async { await retry(); });
   }
 
-  void retry() {
+  void retry() async {
     if (!isConnected() && !isConnecting()) {
       log('Connecting to ' + url);
       try {
         _client = new WebSocket(url);
-      } catch (e) {}
-      _client.onOpen.listen((e) async {
-        log('Connected to ' + url);
-        if (!isSubscribed) {
-          listenResponse();
-          isSubscribed = true;
-        }
-        if (isConnected() && onConnectionCallback != null) {
-          onConnectionCallback();
-          if (lastPackage != null) {
-            await emit(lastPackage.event, lastPackage.payload);
+        _client.onOpen.listen((e) async {
+          log('Connected to ' + url);
+          if (!isSubscribed) {
+            listenResponse();
+            isSubscribed = true;
           }
-        }
-      });
+          if (isConnected() && onConnectionCallback != null) {
+            onConnectionCallback();
+            if (lastPackage != null) {
+              await emit(lastPackage.event, lastPackage.payload);
+            }
+          }
+        });
+      } catch (e) {
+        print(e);
+      }
     }
   }
 
