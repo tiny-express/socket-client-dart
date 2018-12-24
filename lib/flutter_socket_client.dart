@@ -59,8 +59,9 @@ class FlutterSocketClient extends Client implements SocketClient {
         }
         if (onConnectionCallback != null) {
           await onConnectionCallback();
-          if (lastPackage != null) {
-            await emit(lastPackage.event, lastPackage.payload);
+          while (!packageQueue.isEmpty) {
+            var package = packageQueue.removeFirst();
+            await emit(package.event, package.payload);
           }
         }
       } catch (e) {

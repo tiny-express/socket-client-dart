@@ -24,6 +24,7 @@
 
 library client;
 
+import 'dart:collection';
 import 'dart:async';
 import 'socket_client.dart';
 part 'package.dart';
@@ -35,7 +36,7 @@ abstract class Client {
   Function onConnectionCallback;
   Function onDisconnectionCallback;
   dynamic eventListeners = {};
-  Package lastPackage = null;
+  Queue<Package> packageQueue = new Queue();
   StreamController<String> responseStream = null;
   SocketClient socket = null;
   bool debug = false;
@@ -77,11 +78,12 @@ abstract class Client {
   }
 
   Future<bool> emit(String eventName, String payload) async {
-    lastPackage = new Package(eventName, payload);
+    var package = new Package(eventName, payload);
     if (socket.isConnected()) {
-      socket.add(lastPackage.toString());
-      lastPackage = null;
+      socket.add(package.toString());
       return true;
+    } else {
+      packageQueue.addLast(package);
     }
     return false;
   }
