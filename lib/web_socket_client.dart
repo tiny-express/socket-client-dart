@@ -26,14 +26,14 @@ library socket.web;
 
 import 'dart:html';
 import 'dart:async';
-import 'package:socket_client_dart/src/client.dart' as Client;
-import 'package:socket_client_dart/src/socket_client.dart';
+import 'src/client.dart' as Client;
+import 'src/socket_client.dart';
 
 class WebSocketClient extends Client.Client implements SocketClient {
   
-  WebSocket _client;
   WebSocketClient(String url) : super(url);
-  bool isSubscribed = false;
+  WebSocket _client;
+  bool _isRetry = false;
 
   SocketClient getSocket() {
     return this;
@@ -42,38 +42,42 @@ class WebSocketClient extends Client.Client implements SocketClient {
   @override
   Future connect() async {
     socket = this;
-    await retry();
-    new Timer.periodic(new Duration(seconds: 1), (Timer timer) async { await retry(); });
+    retry();
+    new Timer.periodic(new Duration(seconds: 1), (Timer timer) async {
+      retry();
+    });
   }
 
   @override
   void disconnect() {
-    _client.close();
+    if (_client != null) {
+      _client.close();
+      _client = null;
+    }
   }
 
-  Future<void> retry() async {
+  void retry() async {
+    if (_isRetry) {
+      return;
+    }
+    _isRetry = true;
     if (!isConnected() && !isConnecting()) {
-      log('Connecting to ' + url);
       try {
+        disconnect();
         _client = new WebSocket(url);
         _client.onOpen.listen((e) async {
-          log('Connected to ' + url);
-          if (!isSubscribed) {
             listenResponse();
-            isSubscribed = true;
-          }
-          if (isConnected() && onConnectionCallback != null) {
-            onConnectionCallback();
-            while (!packageQueue.isEmpty) {
-              var package = packageQueue.removeFirst();
-              await emit(package.event, package.payload);
+            if (onConnectionCallback != null) {
+              await onConnectionCallback();
+              while (!packageQueue.isEmpty) {
+                var package = packageQueue.removeFirst();
+                await emit(package.event, package.payload);
+              }
             }
-          }
         });
-      } catch (e) {
-        print(e);
-      }
+      } catch (e) {}
     }
+    _isRetry = false;
   }
 
   @override

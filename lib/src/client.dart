@@ -59,7 +59,7 @@ abstract class Client {
   }
 
   Client on(String eventName, Function onPackageCallback) {
-    log('Listening: ' + eventName);
+    log(':: ' + eventName);
     eventListeners[eventName] = onPackageCallback;
     return this;
   }

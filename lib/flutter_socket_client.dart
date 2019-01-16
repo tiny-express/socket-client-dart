@@ -24,16 +24,17 @@
 
 library socket.flutter;
 
-import 'dart:io';
 import 'dart:async';
-import 'package:socket_client_dart/src/client.dart';
-import 'package:socket_client_dart/src/socket_client.dart';
+import 'dart:io';
+
+import 'src/client.dart';
+import 'src/socket_client.dart';
 
 class FlutterSocketClient extends Client implements SocketClient {
-
   WebSocket _client;
+  bool _isRetry = false;
+
   FlutterSocketClient(String url) : super(url);
-  bool isSubscribed = false;
 
   @override
   SocketClient getSocket() {
@@ -44,22 +45,29 @@ class FlutterSocketClient extends Client implements SocketClient {
   Future connect() async {
     socket = this;
     retry();
-    new Timer.periodic(new Duration(seconds: 1), (Timer timer) async { retry(); });
+    new Timer.periodic(new Duration(seconds: 1), (Timer timer) async {
+      retry();
+    });
   }
 
   @override
   void disconnect() {
-    _client.close();
+    if (_client != null) {
+      _client.close();
+      _client = null;
+    }
   }
 
   void retry() async {
+    if (_isRetry) {
+      return;
+    }
+    _isRetry = true;
     if (!isConnected() && !isConnecting()) {
       try {
+        disconnect();
         _client = await WebSocket.connect(url);
-        if (!isSubscribed) {
-          listenResponse();
-          isSubscribed = true;
-        }
+        listenResponse();
         if (onConnectionCallback != null) {
           await onConnectionCallback();
           while (!packageQueue.isEmpty) {
@@ -67,10 +75,9 @@ class FlutterSocketClient extends Client implements SocketClient {
             await emit(package.event, package.payload);
           }
         }
-      } catch (e) {
-        print(e);
-      }
+      } catch (e) {}
     }
+    _isRetry = false;
   }
 
   @override
@@ -82,7 +89,7 @@ class FlutterSocketClient extends Client implements SocketClient {
   bool isConnected() {
     return _client != null && _client.readyState == WebSocket.open;
   }
-  
+
   @override
   Future add(String package) async {
     if (_client != null) {
