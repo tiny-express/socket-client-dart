@@ -1,4 +1,4 @@
-// Copyright 2018 Food Tiny Authors. All rights reserved.
+// Copyright 2018 Tiny Authors. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -43,10 +43,15 @@ class WebSocketClient extends Client.Client implements SocketClient {
   Future connect() async {
     socket = this;
     await retry();
-    new Timer.periodic(new Duration(seconds: 5), (Timer timer) async { await retry(); });
+    new Timer.periodic(new Duration(seconds: 1), (Timer timer) async { await retry(); });
   }
 
-  void retry() async {
+  @override
+  void disconnect() {
+    _client.close();
+  }
+
+  Future<void> retry() async {
     if (!isConnected() && !isConnecting()) {
       log('Connecting to ' + url);
       try {

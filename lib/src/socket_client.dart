@@ -1,4 +1,4 @@
-// Copyright 2018 Food Tiny Authors. All rights reserved.
+// Copyright 2018 Tiny Authors. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -29,6 +29,7 @@ part 'socket_aware.dart';
 
 abstract class SocketClient {
   Future connect();
+  void disconnect();
   bool isConnecting();
   bool isConnected();
   Future add(String message);

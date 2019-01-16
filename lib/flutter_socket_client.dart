@@ -1,4 +1,4 @@
-// Copyright 2018 Food Tiny Authors. All rights reserved.
+// Copyright 2018 Tiny Authors. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -22,7 +22,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-library socket.futter;
+library socket.flutter;
 
 import 'dart:io';
 import 'dart:async';
@@ -44,15 +44,18 @@ class FlutterSocketClient extends Client implements SocketClient {
   Future connect() async {
     socket = this;
     retry();
-    new Timer.periodic(new Duration(seconds: 5), (Timer timer) async { retry(); });
+    new Timer.periodic(new Duration(seconds: 1), (Timer timer) async { retry(); });
+  }
+
+  @override
+  void disconnect() {
+    _client.close();
   }
 
   void retry() async {
     if (!isConnected() && !isConnecting()) {
-      log('Connecting to ' + url);
       try {
         _client = await WebSocket.connect(url);
-        log('Connected to ' + url);
         if (!isSubscribed) {
           listenResponse();
           isSubscribed = true;
