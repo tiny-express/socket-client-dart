@@ -79,7 +79,7 @@ abstract class Client {
 
   Future<bool> emit(String eventName, String payload) async {
     var package = new Package(eventName, payload);
-    if (socket.isConnected()) {
+    if (socket != null && socket.isConnected()) {
       socket.add(package.toString());
       return true;
     } else {
