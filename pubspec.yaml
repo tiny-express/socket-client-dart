@@ -1,6 +1,6 @@
 name: socket_client_dart
 description: Socket Client for Dart
-version: 0.2.11
+version: 0.2.12
 author: Loi Nguyen <loinguyentrung@gmail.com>
 
 environment:
