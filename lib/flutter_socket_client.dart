@@ -45,7 +45,7 @@ class FlutterSocketClient extends Client implements SocketClient {
   Future connect() async {
     socket = this;
     retry();
-    new Timer.periodic(new Duration(seconds: 1), (Timer timer) async {
+    new Timer.periodic(new Duration(milliseconds: 300), (Timer timer) async {
       retry();
     });
   }
