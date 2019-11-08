@@ -65,10 +65,9 @@ class FlutterSocketClient extends Client implements SocketClient {
     _isRetry = true;
     if (!isConnected() && !isConnecting()) {
       try {
-        disconnect();
         _client = await WebSocket.connect(url);
-        listenResponse();
-        if (onConnectionCallback != null) {
+        if (isConnected() && onConnectionCallback != null) {
+          listenResponse();
           await onConnectionCallback();
           while (!packageQueue.isEmpty) {
             var package = packageQueue.removeFirst();
@@ -82,12 +81,15 @@ class FlutterSocketClient extends Client implements SocketClient {
 
   @override
   bool isConnecting() {
-    return _client != null && _client.readyState == WebSocket.connecting;
+    return _client != null && 
+      _client.readyState == WebSocket.connecting;
   }
 
   @override
   bool isConnected() {
-    return _client != null && _client.readyState == WebSocket.open;
+    return _client != null &&
+        _client.readyState == WebSocket.open &&
+        _client.closeCode == null;
   }
 
   @override
