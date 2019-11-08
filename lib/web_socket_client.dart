@@ -66,8 +66,8 @@ class WebSocketClient extends Client.Client implements SocketClient {
         disconnect();
         _client = new WebSocket(url);
         _client.onOpen.listen((e) async {
-            listenResponse();
-            if (onConnectionCallback != null) {
+            if (isConnected() && onConnectionCallback != null) {
+              listenResponse();
               await onConnectionCallback();
               while (!packageQueue.isEmpty) {
                 var package = packageQueue.removeFirst();
@@ -82,12 +82,15 @@ class WebSocketClient extends Client.Client implements SocketClient {
 
   @override
   bool isConnecting() {
-    return _client != null && _client.readyState == WebSocket.CONNECTING;
+    return _client != null && 
+      _client.readyState == WebSocket.CONNECTING;
   }
   
   @override
   bool isConnected() {
-    return _client != null && _client.readyState == WebSocket.OPEN;
+    return _client != null && 
+      _client.readyState == WebSocket.OPEN && 
+      _client.closeCode == null;
   }
 
   @override
