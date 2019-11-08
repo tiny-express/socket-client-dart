@@ -89,8 +89,7 @@ class WebSocketClient extends Client.Client implements SocketClient {
   @override
   bool isConnected() {
     return _client != null && 
-      _client.readyState == WebSocket.OPEN && 
-      _client.closeCode == null;
+      _client.readyState == WebSocket.OPEN;
   }
 
   @override
