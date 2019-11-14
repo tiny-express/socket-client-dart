@@ -74,7 +74,9 @@ class FlutterSocketClient extends Client implements SocketClient {
             await emit(package.event, package.payload);
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        print(e);
+      }
     }
     _isRetry = false;
   }
