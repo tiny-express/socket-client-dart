@@ -42,9 +42,9 @@ class WebSocketClient extends Client.Client implements SocketClient {
   @override
   Future connect() async {
     socket = this;
-    retry();
+    await retry();
     new Timer.periodic(new Duration(milliseconds: 300), (Timer timer) async {
-      retry();
+      await retry();
     });
   }
 
