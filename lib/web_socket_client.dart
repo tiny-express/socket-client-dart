@@ -75,7 +75,9 @@ class WebSocketClient extends Client.Client implements SocketClient {
               }
             }
         });
-      } catch (e) {}
+      } catch (e) {
+        print(e);
+      }
     }
     _isRetry = false;
   }
